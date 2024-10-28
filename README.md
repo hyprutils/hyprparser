@@ -1,6 +1,7 @@
 <div align='center'>
 
-## HyprParser
+<h2>HyprParser <img src='https://raw.githubusercontent.com/hyprutils/.github/refs/heads/main/hyprutils_transparent.png'width='18' height='18'></h2>
+
 A parser for Hyprland's configuration files written in Rust 🚀🦀
 
 [Hyprland Configuration Documentation](https://wiki.hyprland.org/Configuring/Configuring-Hyprland)
@@ -44,3 +45,5 @@ fn main() {
 - [Adam](https://github.com/adamperkowski) - Code optimization, unit tests, documentation updates, [HyprGUI](https://github.com/nnyyxxxx/hyprgui)
 - [Vaxry](https://github.com/vaxerski) - Hyprland
 - [Hyprland](https://github.com/hyprwm/Hyprland) - The window manager
+
+<h6 align='center'>Copyright (C) 2024 HyprUtils<h6>

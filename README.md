@@ -8,8 +8,25 @@ A parser for Hyprland's configuration files written in Rust 🚀🦀
 
 </div>
 
-## Usage example
+## Usage
+HyprParser is available on [Crates.io](https://crates.io/crates/hyprparser). It can be added as a dependency with:
+
+```bash
+$ cargo add hyprparser
+```
+
+Here's an example usage:
+
+```toml
+# Cargo.toml
+
+[dependencies]
+hyprparser = "0.1.1"
+```
+
 ```rust
+// main.rs
+
 use hyprparser::parse_config;
 use std::{env, fs, path::Path};
 

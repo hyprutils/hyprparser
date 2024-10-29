@@ -12,7 +12,7 @@ keywords = [
     "wayland",
     "config",
 ]
-categories = ["parser"]
+categories = ["config"]
 edition = "2021"
 
 [lib]

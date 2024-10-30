@@ -4,6 +4,8 @@
 
 A parser for Hyprland's configuration files written in Rust 🚀🦀
 
+<img src='hyprparser.png' width='200' height='200'><br>
+
 [![Crates.io Version](https://img.shields.io/crates/v/hyprparser)](https://crates.io/crates/hyprparser)
 
 [Hyprland Configuration Documentation](https://wiki.hyprland.org/Configuring/Configuring-Hyprland)

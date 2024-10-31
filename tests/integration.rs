@@ -4,6 +4,7 @@ use hyprparser::{parse_config, HyprlandConfig};
 
 const TEST_CONFIG_FILENAME_0: &str = "tests/test_config_0.conf";
 const TEST_CONFIG_FILENAME_1: &str = "tests/test_config_1.conf";
+const TEST_CONFIG_FILENAME_2: &str = "tests/test_config_2.conf";
 
 #[test]
 fn config_parsing() {
@@ -58,11 +59,11 @@ fn file_sourcing() {
     let config_parsed = parse_config(&fs::read_to_string(TEST_CONFIG_FILENAME_1).unwrap());
     let mut config = HyprlandConfig::new();
 
-    config.add_entry("xwayland", "force_zero_scaling = true");
     config.add_entry_headless(
         "source",
         &format!("{}/tests/test_config_2.conf", env!("CARGO_MANIFEST_DIR")),
     );
+    config.add_sourced(vec![fs::read_to_string(TEST_CONFIG_FILENAME_2).unwrap()]);
 
     assert_eq!(config_parsed, config)
 }

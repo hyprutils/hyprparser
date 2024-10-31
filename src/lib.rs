@@ -117,6 +117,11 @@ impl HyprlandConfig {
         }
     }
 
+    pub fn add_sourced(&mut self, config: Vec<String>) {
+        self.sourced_content.push(config);
+        self.sourced_paths.push(String::new());
+    }
+
     fn update_sections(&mut self, pos: usize, offset: usize) {
         for (start, end) in self.sections.values_mut() {
             if *start >= pos {

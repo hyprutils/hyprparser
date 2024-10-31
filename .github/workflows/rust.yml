@@ -48,6 +48,9 @@ jobs:
       - name: Run cargo fmt
         run: cargo fmt --all --check
 
+      - name: Prepare cargo tests
+        run: echo "source = $(pwd)/tests/test_config_2.conf" > tests/test_config_1.conf
+
       - name: Run cargo test
         run: |
           cargo test

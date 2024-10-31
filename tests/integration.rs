@@ -2,16 +2,17 @@ use std::fs;
 
 use hyprparser::{parse_config, HyprlandConfig};
 
-const TEST_CONFIG_FILENAME: &str = "tests/test_config.conf";
+const TEST_CONFIG_FILENAME_0: &str = "tests/test_config_0.conf";
+const TEST_CONFIG_FILENAME_1: &str = "tests/test_config_1.conf";
 
 #[test]
 fn config_parsing() {
-    let _ = parse_config(&fs::read_to_string(TEST_CONFIG_FILENAME).unwrap());
+    let _ = parse_config(&fs::read_to_string(TEST_CONFIG_FILENAME_0).unwrap());
 }
 
 #[test]
 fn entry_adding() {
-    let config_parsed = parse_config(&fs::read_to_string(TEST_CONFIG_FILENAME).unwrap());
+    let config_parsed = parse_config(&fs::read_to_string(TEST_CONFIG_FILENAME_0).unwrap());
     let mut config = HyprlandConfig::new();
 
     config.add_entry("envcursor", "no_hardware_cursors = true");
@@ -50,4 +51,18 @@ fn color_parsing() {
     assert_eq!(expected, rgba_parsed);
     assert_eq!(expected, rgb_parsed);
     assert_eq!(expected, argb_parsed);
+}
+
+#[test]
+fn file_sourcing() {
+    let config_parsed = parse_config(&fs::read_to_string(TEST_CONFIG_FILENAME_1).unwrap());
+    let mut config = HyprlandConfig::new();
+
+    config.add_entry("xwayland", "force_zero_scaling = true");
+    config.add_entry_headless(
+        "source",
+        &format!("{}/tests/test_config_2.conf", env!("CARGO_MANIFEST_DIR")),
+    );
+
+    assert_eq!(config_parsed, config)
 }

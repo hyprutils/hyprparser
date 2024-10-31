@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use std::fmt;
+use std::{env, fmt, fs};
 
 #[derive(Debug, Default)]
 pub struct HyprlandConfig {
@@ -16,7 +16,29 @@ impl HyprlandConfig {
         let mut section_stack = Vec::new();
         for (i, line) in config_str.lines().enumerate() {
             let trimmed = line.trim();
-            if trimmed.ends_with('{') {
+
+            if trimmed.starts_with("source =") {
+                if let Some(sourced_path) = trimmed.strip_prefix("source =").map(|s| s.trim()) {
+                    if !sourced_path.starts_with("/") && !sourced_path.starts_with("~") {
+                        println!("okk");
+                        if let Ok(sourced_content) = fs::read_to_string(format!(
+                            "{}/.config/hypr/{}",
+                            env::var("HOME").unwrap(),
+                            sourced_path
+                        )) {
+                            self.parse(&sourced_content);
+                        }
+                    } else {
+                        if let Ok(sourced_content) = fs::read_to_string(sourced_path.replacen(
+                            "~",
+                            &env::var("HOME").unwrap(),
+                            1,
+                        )) {
+                            self.parse(&sourced_content);
+                        }
+                    }
+                }
+            } else if trimmed.ends_with('{') {
                 let section_name = trimmed.trim_end_matches('{').trim().to_string();
                 section_stack.push((section_name, i));
             } else if trimmed == "}" && !section_stack.is_empty() {

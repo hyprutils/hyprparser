@@ -5,6 +5,9 @@ use std::{env, fmt, fs};
 pub struct HyprlandConfig {
     content: Vec<String>,
     sections: HashMap<String, (usize, usize)>,
+    sourced_content: Vec<Vec<String>>,
+    sourced_sections: HashMap<String, (usize, usize)>,
+    sourced_paths: Vec<String>,
 }
 
 impl HyprlandConfig {
@@ -12,27 +15,28 @@ impl HyprlandConfig {
         Self::default()
     }
 
-    pub fn parse(&mut self, config_str: &str) {
+    pub fn parse(&mut self, config_str: &str, sourced: bool) {
         let mut section_stack = Vec::new();
+        let mut sourced_content: Vec<String> = Vec::new();
+
         for (i, line) in config_str.lines().enumerate() {
             let trimmed = line.trim();
 
-            if trimmed.starts_with("source =") {
+            if trimmed.starts_with("source =") && !sourced {
                 if let Some(sourced_path) = trimmed.strip_prefix("source =").map(|s| s.trim()) {
                     if !sourced_path.starts_with("/") && !sourced_path.starts_with("~") {
-                        if let Ok(sourced_content) = fs::read_to_string(format!(
+                        let sourced_path = format!(
                             "{}/.config/hypr/{}",
                             env::var("HOME").unwrap(),
                             sourced_path
-                        )) {
-                            self.parse(&sourced_content);
-                        }
-                    } else if let Ok(sourced_content) = fs::read_to_string(sourced_path.replacen(
-                        "~",
-                        &env::var("HOME").unwrap(),
-                        1,
-                    )) {
-                        self.parse(&sourced_content);
+                        );
+                        self.parse(&fs::read_to_string(sourced_path.clone()).unwrap(), true);
+                        self.sourced_paths.push(sourced_path);
+                    } else {
+                        let sourced_path =
+                            sourced_path.replacen("~", &env::var("HOME").unwrap(), 1);
+                        self.parse(&fs::read_to_string(sourced_path.clone()).unwrap(), true);
+                        self.sourced_paths.push(sourced_path);
                     }
                 }
             } else if trimmed.ends_with('{') {
@@ -46,10 +50,19 @@ impl HyprlandConfig {
                     .chain(std::iter::once(name.as_str()))
                     .collect::<Vec<_>>()
                     .join(".");
-                self.sections.insert(full_name, (start, i));
+                if sourced {
+                    self.sourced_sections.insert(full_name, (start, i));
+                } else {
+                    self.sections.insert(full_name, (start, i));
+                }
             }
-            self.content.push(line.to_string());
+            if sourced {
+                sourced_content.push(line.to_string());
+            } else {
+                self.content.push(line.to_string());
+            }
         }
+        self.sourced_content.push(sourced_content);
     }
 
     pub fn add_entry(&mut self, category: &str, entry: &str) {
@@ -186,7 +199,7 @@ impl HyprlandConfig {
 
 pub fn parse_config(config_str: &str) -> HyprlandConfig {
     let mut config = HyprlandConfig::new();
-    config.parse(config_str);
+    config.parse(config_str, false);
     config
 }
 

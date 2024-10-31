@@ -7,7 +7,7 @@ pub struct HyprlandConfig {
     sections: HashMap<String, (usize, usize)>,
     sourced_content: Vec<Vec<String>>,
     sourced_sections: HashMap<String, (usize, usize)>,
-    sourced_paths: Vec<String>,
+    pub sourced_paths: Vec<String>,
 }
 
 impl HyprlandConfig {
@@ -66,6 +66,47 @@ impl HyprlandConfig {
     }
 
     pub fn add_entry(&mut self, category: &str, entry: &str) {
+        if let Some((source_index, section)) = self.find_sourced_section(category) {
+            let (start, end) = section;
+            let depth = category.matches('.').count();
+            let key = entry.split('=').next().unwrap().trim();
+            let formatted_entry = format!("{}{}", "    ".repeat(depth + 1), entry);
+
+            let mut should_update_sections = false;
+            let mut content_updated = String::new();
+
+            if let Some(sourced_content) = self.sourced_content.get_mut(source_index) {
+                let existing_line = sourced_content[start..=end]
+                    .iter()
+                    .position(|line| line.trim().starts_with(key));
+
+                match existing_line {
+                    Some(line_num) => {
+                        sourced_content[start + line_num] = formatted_entry;
+                    }
+                    None => {
+                        sourced_content.insert(end, formatted_entry);
+                        should_update_sections = true;
+                    }
+                }
+
+                content_updated = sourced_content.join("\n");
+            }
+
+            if should_update_sections {
+                self.update_sourced_sections(source_index, end, 1);
+            }
+
+            if let Some(sourced_path) = self.sourced_paths.get(source_index) {
+                if !sourced_path.is_empty() {
+                    if let Err(e) = fs::write(sourced_path, content_updated) {
+                        eprintln!("Failed to write to sourced file {}: {}", sourced_path, e);
+                    }
+                }
+            }
+            return;
+        }
+
         let parts: Vec<&str> = category.split('.').collect();
         let mut current_section = String::new();
         let mut insert_pos = self.content.len();
@@ -129,6 +170,24 @@ impl HyprlandConfig {
                 *end += offset;
             } else if *end >= pos {
                 *end += offset;
+            }
+        }
+    }
+
+    fn update_sourced_sections(&mut self, source_index: usize, pos: usize, offset: usize) {
+        for ((_, (start, end)), sourced_path) in self
+            .sourced_sections
+            .iter_mut()
+            .filter(|(_, (start, _))| *start >= pos)
+            .zip(self.sourced_paths.iter().skip(source_index))
+        {
+            if !sourced_path.is_empty() {
+                if *start >= pos {
+                    *start += offset;
+                    *end += offset;
+                } else if *end >= pos {
+                    *end += offset;
+                }
             }
         }
     }
@@ -199,6 +258,17 @@ impl HyprlandConfig {
             category.to_string(),
             (*insert_pos - 3 - lines_added, *insert_pos - 2),
         );
+    }
+
+    fn find_sourced_section(&self, category: &str) -> Option<(usize, (usize, usize))> {
+        if let Some(&section) = self.sourced_sections.get(category) {
+            for (idx, _) in self.sourced_content.iter().enumerate() {
+                if self.sourced_paths.get(idx).map_or(false, |p| !p.is_empty()) {
+                    return Some((idx, section));
+                }
+            }
+        }
+        None
     }
 }
 

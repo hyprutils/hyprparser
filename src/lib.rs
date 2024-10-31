@@ -20,7 +20,6 @@ impl HyprlandConfig {
             if trimmed.starts_with("source =") {
                 if let Some(sourced_path) = trimmed.strip_prefix("source =").map(|s| s.trim()) {
                     if !sourced_path.starts_with("/") && !sourced_path.starts_with("~") {
-                        println!("okk");
                         if let Ok(sourced_content) = fs::read_to_string(format!(
                             "{}/.config/hypr/{}",
                             env::var("HOME").unwrap(),

@@ -27,14 +27,12 @@ impl HyprlandConfig {
                         )) {
                             self.parse(&sourced_content);
                         }
-                    } else {
-                        if let Ok(sourced_content) = fs::read_to_string(sourced_path.replacen(
-                            "~",
-                            &env::var("HOME").unwrap(),
-                            1,
-                        )) {
-                            self.parse(&sourced_content);
-                        }
+                    } else if let Ok(sourced_content) = fs::read_to_string(sourced_path.replacen(
+                        "~",
+                        &env::var("HOME").unwrap(),
+                        1,
+                    )) {
+                        self.parse(&sourced_content);
                     }
                 }
             } else if trimmed.ends_with('{') {

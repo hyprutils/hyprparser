@@ -67,9 +67,16 @@ impl HyprlandConfig {
     }
 
     pub fn add_entry(&mut self, category: &str, entry: &str) {
-        if let Some((source_index, section)) = self.find_sourced_section(category) {
-            let (start, end) = section;
-            let depth = category.matches('.').count();
+        let parts: Vec<&str> = category.split('.').collect();
+        let parent_category = if parts.len() > 1 {
+            parts[..parts.len()-1].join(".")
+        } else {
+            category.to_string()
+        };
+
+        if let Some((source_index, _)) = self.find_sourced_section(&parent_category) {
+            let (start, end) = self.sourced_sections.get(&format!("{}_{}", parent_category, source_index)).unwrap();
+            let depth = parent_category.matches('.').count();
             let key = entry.split('=').next().unwrap().trim();
             let formatted_entry = format!("{}{}", "    ".repeat(depth + 1), entry);
 
@@ -77,17 +84,28 @@ impl HyprlandConfig {
             let mut content_updated = String::new();
 
             if let Some(sourced_content) = self.sourced_content.get_mut(source_index) {
-                let existing_line = sourced_content[start..=end]
-                    .iter()
-                    .position(|line| line.trim().starts_with(key));
+                if parts.len() > 1 && !self.sourced_sections.contains_key(&format!("{}_{}", category, source_index)) {
+                    let last_part = parts.last().unwrap();
+                    let section_start = format!("{}{} {{", "    ".repeat(depth + 1), last_part);
+                    let section_end = format!("{}}}", "    ".repeat(depth + 1));
+                    
+                    sourced_content.insert(*end, section_start);
+                    sourced_content.insert(*end + 1, formatted_entry);
+                    sourced_content.insert(*end + 2, section_end);
+                    should_update_sections = true;
+                } else {
+                    let existing_line = sourced_content[*start..=*end]
+                        .iter()
+                        .position(|line| line.trim().starts_with(key));
 
-                match existing_line {
-                    Some(line_num) => {
-                        sourced_content[start + line_num] = formatted_entry;
-                    }
-                    None => {
-                        sourced_content.insert(end, formatted_entry);
-                        should_update_sections = true;
+                    match existing_line {
+                        Some(line_num) => {
+                            sourced_content[start + line_num] = formatted_entry;
+                        }
+                        None => {
+                            sourced_content.insert(*end, formatted_entry);
+                            should_update_sections = true;
+                        }
                     }
                 }
 
@@ -95,7 +113,7 @@ impl HyprlandConfig {
             }
 
             if should_update_sections {
-                self.update_sourced_sections(source_index, end, 1);
+                self.update_sourced_sections(source_index, *end, 1);
             }
 
             if let Some(sourced_path) = self.sourced_paths.get(source_index) {

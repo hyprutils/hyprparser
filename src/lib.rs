@@ -76,7 +76,7 @@ impl HyprlandConfig {
 
         if let Some((source_index, _)) = self.find_sourced_section(&parent_category) {
             let section_key = format!("{}_{}", parent_category, source_index);
-            let (mut start, mut end) = self.sourced_sections.get(&section_key).unwrap().clone();
+            let (start, mut end) = *self.sourced_sections.get(&section_key).unwrap();
             let depth = parent_category.matches('.').count();
             let key = entry.split('=').next().unwrap().trim();
 

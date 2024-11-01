@@ -3,10 +3,10 @@ use std::{env, fmt, fs};
 
 #[derive(Debug, Default)]
 pub struct HyprlandConfig {
-    content: Vec<String>,
-    sections: HashMap<String, (usize, usize)>,
-    sourced_content: Vec<Vec<String>>,
-    sourced_sections: HashMap<String, (usize, usize)>,
+    pub content: Vec<String>,
+    pub sections: HashMap<String, (usize, usize)>,
+    pub sourced_content: Vec<Vec<String>>,
+    pub sourced_sections: HashMap<String, (usize, usize)>,
     pub sourced_paths: Vec<String>,
 }
 

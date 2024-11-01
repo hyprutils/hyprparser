@@ -69,7 +69,7 @@ impl HyprlandConfig {
     pub fn add_entry(&mut self, category: &str, entry: &str) {
         let parts: Vec<&str> = category.split('.').collect();
         let parent_category = if parts.len() > 1 {
-            parts[..parts.len()-1].join(".")
+            parts[..parts.len() - 1].join(".")
         } else {
             category.to_string()
         };
@@ -85,24 +85,28 @@ impl HyprlandConfig {
 
             if let Some(sourced_content) = self.sourced_content.get_mut(source_index) {
                 let subcategory_key = format!("{}_{}", category, source_index);
-                
+
                 if parts.len() > 1 && !self.sourced_sections.contains_key(&subcategory_key) {
                     let last_part = parts.last().unwrap();
                     let section_start = format!("{}{} {{", "    ".repeat(depth + 1), last_part);
                     let section_end = format!("{}}}", "    ".repeat(depth + 1));
-                    
+
                     if end > 0 && !sourced_content[end - 1].trim().is_empty() {
                         sourced_content.insert(end, String::new());
                         end += 1;
                     }
-                    
+
                     sourced_content.insert(end, section_start);
-                    sourced_content.insert(end + 1, format!("{}{}", "    ".repeat(depth + 2), entry));
+                    sourced_content
+                        .insert(end + 1, format!("{}{}", "    ".repeat(depth + 2), entry));
                     sourced_content.insert(end + 2, section_end);
-                    
-                    self.sourced_sections.insert(subcategory_key, (end + 1, end + 1));
+
+                    self.sourced_sections
+                        .insert(subcategory_key, (end + 1, end + 1));
                     should_update_sections = true;
-                } else if let Some(&(sub_start, sub_end)) = self.sourced_sections.get(&subcategory_key) {
+                } else if let Some(&(sub_start, sub_end)) =
+                    self.sourced_sections.get(&subcategory_key)
+                {
                     let formatted_entry = format!("{}{}", "    ".repeat(depth + 2), entry);
                     let existing_line = sourced_content[sub_start..=sub_end]
                         .iter()

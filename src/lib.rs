@@ -34,8 +34,10 @@ impl HyprlandConfig {
                     } else {
                         path.replacen("~", &env::var("HOME").unwrap(), 1)
                     };
-                    self.parse(&fs::read_to_string(sourced_path.clone()).unwrap(), true);
-                    self.sourced_paths.push(sourced_path);
+                    if let Ok(content) = fs::read_to_string(&sourced_path) {
+                        self.parse(&content, true);
+                        self.sourced_paths.push(sourced_path);
+                    }
                 }
             } else if trimmed.ends_with('{') {
                 let section_name = trimmed.trim_end_matches('{').trim().to_string();

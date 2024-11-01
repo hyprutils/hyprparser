@@ -69,7 +69,7 @@ impl HyprlandConfig {
     pub fn add_entry(&mut self, category: &str, entry: &str) {
         let parts: Vec<&str> = category.split('.').collect();
         let parent_category = if parts.len() > 1 {
-            parts[..parts.len()].join(".")
+            parts[..parts.len() - 1].join(".")
         } else {
             category.to_string()
         };
@@ -107,6 +107,13 @@ impl HyprlandConfig {
                 } else if let Some(&(sub_start, sub_end)) =
                     self.sourced_sections.get(&subcategory_key)
                 {
+                    let parent_category = if parts.len() > 1 {
+                        parts[..parts.len()].join(".")
+                    } else {
+                        category.to_string()
+                    };
+                    let depth = parent_category.matches('.').count();
+
                     let formatted_entry = format!("{}{}", "    ".repeat(depth + 1), entry);
                     let existing_line = sourced_content[sub_start..=sub_end]
                         .iter()

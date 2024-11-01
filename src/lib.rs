@@ -18,6 +18,11 @@ impl HyprlandConfig {
     pub fn parse(&mut self, config_str: &str, sourced: bool) {
         let mut section_stack = Vec::new();
         let mut sourced_content: Vec<String> = Vec::new();
+        let source_index = if sourced {
+            self.sourced_content.len()
+        } else {
+            0
+        };
 
         for (i, line) in config_str.lines().enumerate() {
             let trimmed = line.trim();
@@ -44,7 +49,8 @@ impl HyprlandConfig {
                     .collect::<Vec<_>>()
                     .join(".");
                 if sourced {
-                    self.sourced_sections.insert(full_name, (start, i));
+                    self.sourced_sections
+                        .insert(format!("{}_{}", full_name, source_index), (start, i));
                 } else {
                     self.sections.insert(full_name, (start, i));
                 }
@@ -55,7 +61,9 @@ impl HyprlandConfig {
                 self.content.push(line.to_string());
             }
         }
-        self.sourced_content.push(sourced_content);
+        if sourced {
+            self.sourced_content.push(sourced_content);
+        }
     }
 
     pub fn add_entry(&mut self, category: &str, entry: &str) {
@@ -254,8 +262,9 @@ impl HyprlandConfig {
     }
 
     fn find_sourced_section(&self, category: &str) -> Option<(usize, (usize, usize))> {
-        if let Some(&section) = self.sourced_sections.get(category) {
-            for (idx, _) in self.sourced_content.iter().enumerate() {
+        for (idx, _) in self.sourced_content.iter().enumerate() {
+            let section_key = format!("{}_{}", category, idx);
+            if let Some(&section) = self.sourced_sections.get(&section_key) {
                 if self.sourced_paths.get(idx).map_or(false, |p| !p.is_empty()) {
                     return Some((idx, section));
                 }

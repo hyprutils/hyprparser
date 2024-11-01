@@ -25,7 +25,7 @@ Here's an example usage:
 # Cargo.toml
 
 [dependencies]
-hyprparser = "0.1.1"
+hyprparser = "0.1.2"
 ```
 
 ```rust

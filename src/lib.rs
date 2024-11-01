@@ -1,10 +1,13 @@
 use std::collections::HashMap;
-use std::fmt;
+use std::{env, fmt, fs};
 
 #[derive(Debug, Default)]
 pub struct HyprlandConfig {
-    content: Vec<String>,
-    sections: HashMap<String, (usize, usize)>,
+    pub content: Vec<String>,
+    pub sections: HashMap<String, (usize, usize)>,
+    pub sourced_content: Vec<Vec<String>>,
+    pub sourced_sections: HashMap<String, (usize, usize)>,
+    pub sourced_paths: Vec<String>,
 }
 
 impl HyprlandConfig {
@@ -12,11 +15,31 @@ impl HyprlandConfig {
         Self::default()
     }
 
-    pub fn parse(&mut self, config_str: &str) {
+    pub fn parse(&mut self, config_str: &str, sourced: bool) {
         let mut section_stack = Vec::new();
+        let mut sourced_content: Vec<String> = Vec::new();
+        let source_index = if sourced {
+            self.sourced_content.len()
+        } else {
+            0
+        };
+
         for (i, line) in config_str.lines().enumerate() {
             let trimmed = line.trim();
-            if trimmed.ends_with('{') {
+
+            if trimmed.starts_with("source") && !sourced {
+                if let Some(path) = trimmed.split_once('=').map(|(_, p)| p.trim()) {
+                    let sourced_path = if !path.starts_with('/') && !path.starts_with('~') {
+                        format!("{}/.config/hypr/{}", env::var("HOME").unwrap(), path)
+                    } else {
+                        path.replacen("~", &env::var("HOME").unwrap(), 1)
+                    };
+                    if let Ok(content) = fs::read_to_string(&sourced_path) {
+                        self.parse(&content, true);
+                        self.sourced_paths.push(sourced_path);
+                    }
+                }
+            } else if trimmed.ends_with('{') {
                 let section_name = trimmed.trim_end_matches('{').trim().to_string();
                 section_stack.push((section_name, i));
             } else if trimmed == "}" && !section_stack.is_empty() {
@@ -27,13 +50,120 @@ impl HyprlandConfig {
                     .chain(std::iter::once(name.as_str()))
                     .collect::<Vec<_>>()
                     .join(".");
-                self.sections.insert(full_name, (start, i));
+                if sourced {
+                    self.sourced_sections
+                        .insert(format!("{}_{}", full_name, source_index), (start, i));
+                } else {
+                    self.sections.insert(full_name, (start, i));
+                }
             }
-            self.content.push(line.to_string());
+            if sourced {
+                sourced_content.push(line.to_string());
+            } else {
+                self.content.push(line.to_string());
+            }
+        }
+        if sourced {
+            self.sourced_content.push(sourced_content);
         }
     }
 
     pub fn add_entry(&mut self, category: &str, entry: &str) {
+        let parts: Vec<&str> = category.split('.').collect();
+        let parent_category = if parts.len() > 1 {
+            parts[..parts.len() - 1].join(".")
+        } else {
+            category.to_string()
+        };
+
+        if let Some((source_index, _)) = self.find_sourced_section(&parent_category) {
+            let section_key = format!("{}_{}", parent_category, source_index);
+            let (start, mut end) = *self.sourced_sections.get(&section_key).unwrap();
+            let depth = parent_category.matches('.').count();
+            let key = entry.split('=').next().unwrap().trim();
+
+            let mut should_update_sections = false;
+            let mut content_updated = String::new();
+
+            if let Some(sourced_content) = self.sourced_content.get_mut(source_index) {
+                let subcategory_key = format!("{}_{}", category, source_index);
+
+                if parts.len() > 1 && !self.sourced_sections.contains_key(&subcategory_key) {
+                    let last_part = parts.last().unwrap();
+                    let section_start = format!("{}{} {{", "    ".repeat(depth + 1), last_part);
+                    let section_end = format!("{}}}", "    ".repeat(depth + 1));
+
+                    if end > 0 && !sourced_content[end - 1].trim().is_empty() {
+                        sourced_content.insert(end, String::new());
+                        end += 1;
+                    }
+
+                    sourced_content.insert(end, section_start);
+                    sourced_content
+                        .insert(end + 1, format!("{}{}", "    ".repeat(depth + 2), entry));
+                    sourced_content.insert(end + 2, section_end);
+
+                    self.sourced_sections
+                        .insert(subcategory_key, (end + 1, end + 1));
+                    should_update_sections = true;
+                } else if let Some(&(sub_start, sub_end)) =
+                    self.sourced_sections.get(&subcategory_key)
+                {
+                    let parent_category = if parts.len() > 1 {
+                        parts[..parts.len()].join(".")
+                    } else {
+                        category.to_string()
+                    };
+                    let depth = parent_category.matches('.').count();
+
+                    let formatted_entry = format!("{}{}", "    ".repeat(depth + 1), entry);
+                    let existing_line = sourced_content[sub_start..=sub_end]
+                        .iter()
+                        .position(|line| line.trim().starts_with(key));
+
+                    match existing_line {
+                        Some(line_num) => {
+                            sourced_content[sub_start + line_num] = formatted_entry;
+                        }
+                        None => {
+                            sourced_content.insert(sub_end, formatted_entry);
+                            should_update_sections = true;
+                        }
+                    }
+                } else {
+                    let formatted_entry = format!("{}{}", "    ".repeat(depth + 1), entry);
+                    let existing_line = sourced_content[start..=end]
+                        .iter()
+                        .position(|line| line.trim().starts_with(key));
+
+                    match existing_line {
+                        Some(line_num) => {
+                            sourced_content[start + line_num] = formatted_entry;
+                        }
+                        None => {
+                            sourced_content.insert(end, formatted_entry);
+                            should_update_sections = true;
+                        }
+                    }
+                }
+
+                content_updated = sourced_content.join("\n");
+            }
+
+            if should_update_sections {
+                self.update_sourced_sections(source_index, end, 1);
+            }
+
+            if let Some(sourced_path) = self.sourced_paths.get(source_index) {
+                if !sourced_path.is_empty() {
+                    if let Err(e) = fs::write(sourced_path, content_updated) {
+                        eprintln!("Failed to write to sourced file {}: {}", sourced_path, e);
+                    }
+                }
+            }
+            return;
+        }
+
         let parts: Vec<&str> = category.split('.').collect();
         let mut current_section = String::new();
         let mut insert_pos = self.content.len();
@@ -85,6 +215,11 @@ impl HyprlandConfig {
         }
     }
 
+    pub fn add_sourced(&mut self, config: Vec<String>) {
+        self.sourced_content.push(config);
+        self.sourced_paths.push(String::new());
+    }
+
     fn update_sections(&mut self, pos: usize, offset: usize) {
         for (start, end) in self.sections.values_mut() {
             if *start >= pos {
@@ -92,6 +227,24 @@ impl HyprlandConfig {
                 *end += offset;
             } else if *end >= pos {
                 *end += offset;
+            }
+        }
+    }
+
+    fn update_sourced_sections(&mut self, source_index: usize, pos: usize, offset: usize) {
+        for ((_, (start, end)), sourced_path) in self
+            .sourced_sections
+            .iter_mut()
+            .filter(|(_, (start, _))| *start >= pos)
+            .zip(self.sourced_paths.iter().skip(source_index))
+        {
+            if !sourced_path.is_empty() {
+                if *start >= pos {
+                    *start += offset;
+                    *end += offset;
+                } else if *end >= pos {
+                    *end += offset;
+                }
             }
         }
     }
@@ -163,11 +316,23 @@ impl HyprlandConfig {
             (*insert_pos - 3 - lines_added, *insert_pos - 2),
         );
     }
+
+    fn find_sourced_section(&self, category: &str) -> Option<(usize, (usize, usize))> {
+        for (idx, _) in self.sourced_content.iter().enumerate() {
+            let section_key = format!("{}_{}", category, idx);
+            if let Some(&section) = self.sourced_sections.get(&section_key) {
+                if self.sourced_paths.get(idx).map_or(false, |p| !p.is_empty()) {
+                    return Some((idx, section));
+                }
+            }
+        }
+        None
+    }
 }
 
 pub fn parse_config(config_str: &str) -> HyprlandConfig {
     let mut config = HyprlandConfig::new();
-    config.parse(config_str);
+    config.parse(config_str, false);
     config
 }
 

@@ -75,10 +75,10 @@ impl HyprlandConfig {
         };
 
         if let Some((source_index, _)) = self.find_sourced_section(&parent_category) {
-            let (start, end) = self.sourced_sections.get(&format!("{}_{}", parent_category, source_index)).unwrap();
+            let section_key = format!("{}_{}", parent_category, source_index);
+            let (mut start, mut end) = self.sourced_sections.get(&section_key).unwrap().clone();
             let depth = parent_category.matches('.').count();
             let key = entry.split('=').next().unwrap().trim();
-            let formatted_entry = format!("{}{}", "    ".repeat(depth + 1), entry);
 
             let mut should_update_sections = false;
             let mut content_updated = String::new();
@@ -89,12 +89,19 @@ impl HyprlandConfig {
                     let section_start = format!("{}{} {{", "    ".repeat(depth + 1), last_part);
                     let section_end = format!("{}}}", "    ".repeat(depth + 1));
                     
-                    sourced_content.insert(*end, section_start);
-                    sourced_content.insert(*end + 1, formatted_entry);
-                    sourced_content.insert(*end + 2, section_end);
+                    if end > 0 && !sourced_content[end - 1].trim().is_empty() {
+                        sourced_content.insert(end, String::new());
+                        end += 1;
+                    }
+                    
+                    sourced_content.insert(end, section_start);
+                    sourced_content.insert(end + 1, format!("{}{}", "    ".repeat(depth + 2), entry));
+                    sourced_content.insert(end + 2, section_end);
+                    sourced_content.insert(end + 3, String::new());
                     should_update_sections = true;
                 } else {
-                    let existing_line = sourced_content[*start..=*end]
+                    let formatted_entry = format!("{}{}", "    ".repeat(depth + 1), entry);
+                    let existing_line = sourced_content[start..=end]
                         .iter()
                         .position(|line| line.trim().starts_with(key));
 
@@ -103,7 +110,7 @@ impl HyprlandConfig {
                             sourced_content[start + line_num] = formatted_entry;
                         }
                         None => {
-                            sourced_content.insert(*end, formatted_entry);
+                            sourced_content.insert(end, formatted_entry);
                             should_update_sections = true;
                         }
                     }
@@ -113,7 +120,7 @@ impl HyprlandConfig {
             }
 
             if should_update_sections {
-                self.update_sourced_sections(source_index, *end, 1);
+                self.update_sourced_sections(source_index, end, 1);
             }
 
             if let Some(sourced_path) = self.sourced_paths.get(source_index) {

@@ -24,25 +24,57 @@ impl HyprlandConfig {
             0
         };
 
+        let mut env_vars = HashMap::new();
+        let home = env::var("HOME").unwrap_or_default();
+        env_vars.insert("HOME".to_string(), home.clone());
+
+        println!("Parsing env vars from config:");
+        for line in config_str.lines() {
+            let trimmed = line.trim();
+            if let Some((var, val)) = trimmed.split_once('=').map(|(v, p)| (v.trim(), p.trim())) {
+                if var.starts_with('$') {
+                    println!("Found env var: {} = {}", var, val);
+                    let mut expanded_val = val.to_string();
+                    for (existing_var, existing_val) in &env_vars {
+                        expanded_val =
+                            expanded_val.replace(&format!("${}", existing_var), existing_val);
+                    }
+                    env_vars.insert(var[1..].to_string(), expanded_val);
+                    continue;
+                }
+            }
+        }
+        println!("Collected env vars: {:?}", env_vars);
+
         for (i, line) in config_str.lines().enumerate() {
             let trimmed = line.trim();
 
             if trimmed.starts_with("source") && !sourced {
                 if let Some(path) = trimmed.split_once('=').map(|(_, p)| p.trim()) {
-                    let home = env::var("HOME").unwrap();
-                    let expanded_path = path
-                        .replace("$HOME", &home)
-                        .replace("$Config", &format!("{}/.config/hypr", home));
+                    println!("Processing source path: {}", path);
+                    let mut expanded_path = path.to_string();
 
-                    let sourced_path =
-                        if !expanded_path.starts_with('/') && !expanded_path.starts_with('~') {
-                            format!("{}/.config/hypr/{}", home, expanded_path)
-                        } else {
-                            expanded_path.replacen("~", &home, 1)
-                        };
-                    if let Ok(content) = fs::read_to_string(&sourced_path) {
-                        self.parse(&content, true);
-                        self.sourced_paths.push(sourced_path);
+                    for (var, val) in &env_vars {
+                        let var_pattern = format!("${}", var);
+                        println!("Replacing {} with {}", var_pattern, val);
+                        expanded_path = expanded_path.replace(&var_pattern, val);
+                    }
+                    println!("After env var expansion: {}", expanded_path);
+
+                    if !expanded_path.starts_with('/') && !expanded_path.starts_with('~') {
+                        expanded_path = format!("{}/.config/hypr/{}", home, expanded_path);
+                    } else {
+                        expanded_path = expanded_path.replacen("~", &home, 1);
+                    }
+                    println!("Final expanded path: {}", expanded_path);
+
+                    match fs::read_to_string(&expanded_path) {
+                        Ok(content) => {
+                            println!("Successfully read sourced file");
+                            self.parse(&content, true);
+                            self.sourced_paths.push(expanded_path);
+                        }
+                        Err(e) => println!("Failed to read file: {}", e),
                     }
                 }
             } else if trimmed.ends_with('{') {

@@ -31,7 +31,10 @@ impl HyprlandConfig {
         println!("Parsing env vars from config:");
         for line in config_str.lines() {
             let trimmed = line.trim();
-            if let Some((var, val)) = trimmed.split_once('=').map(|(v, p)| (v.trim(), p.trim())) {
+            if let Some((var, val)) = trimmed
+                .split_once('=')
+                .map(|(v, p)| (v.trim(), p.split('#').next().unwrap_or(p).trim()))
+            {
                 if let Some(stripped) = var.strip_prefix('$') {
                     println!("Found env var: {} = {}", var, val);
                     let mut expanded_val = val.to_string();

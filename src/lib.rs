@@ -32,14 +32,14 @@ impl HyprlandConfig {
         for line in config_str.lines() {
             let trimmed = line.trim();
             if let Some((var, val)) = trimmed.split_once('=').map(|(v, p)| (v.trim(), p.trim())) {
-                if var.starts_with('$') {
+                if let Some(stripped) = var.strip_prefix('$') {
                     println!("Found env var: {} = {}", var, val);
                     let mut expanded_val = val.to_string();
                     for (existing_var, existing_val) in &env_vars {
                         expanded_val =
                             expanded_val.replace(&format!("${}", existing_var), existing_val);
                     }
-                    env_vars.insert(var[1..].to_string(), expanded_val);
+                    env_vars.insert(stripped.to_string(), expanded_val);
                     continue;
                 }
             }

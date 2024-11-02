@@ -52,7 +52,7 @@ impl HyprlandConfig {
             if trimmed.starts_with("source") && !sourced {
                 if let Some(path) = trimmed
                     .split_once('=')
-                    .map(|(_, p)| p.trim().split_once('#').map(|(p, _)| p).unwrap_or(p))
+                    .map(|(_, p)| p.split('#').next().unwrap_or(p).trim())
                 {
                     println!("Processing source path: {}", path);
                     let mut expanded_path = path.to_string();

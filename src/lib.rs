@@ -29,11 +29,17 @@ impl HyprlandConfig {
 
             if trimmed.starts_with("source") && !sourced {
                 if let Some(path) = trimmed.split_once('=').map(|(_, p)| p.trim()) {
-                    let sourced_path = if !path.starts_with('/') && !path.starts_with('~') {
-                        format!("{}/.config/hypr/{}", env::var("HOME").unwrap(), path)
-                    } else {
-                        path.replacen("~", &env::var("HOME").unwrap(), 1)
-                    };
+                    let home = env::var("HOME").unwrap();
+                    let expanded_path = path
+                        .replace("$HOME", &home)
+                        .replace("$Config", &format!("{}/.config/hypr", home));
+
+                    let sourced_path =
+                        if !expanded_path.starts_with('/') && !expanded_path.starts_with('~') {
+                            format!("{}/.config/hypr/{}", home, expanded_path)
+                        } else {
+                            expanded_path.replacen("~", &home, 1)
+                        };
                     if let Ok(content) = fs::read_to_string(&sourced_path) {
                         self.parse(&content, true);
                         self.sourced_paths.push(sourced_path);

@@ -65,6 +65,6 @@ fn main() {
 - [Nyx](https://github.com/nnyyxxxx) - The parser (everything), [HyprGUI](https://github.com/nnyyxxxx/hyprgui)
 - [Adam](https://github.com/adamperkowski) - Code optimization, unit tests, documentation updates, [HyprGUI](https://github.com/nnyyxxxx/hyprgui)
 - [Vaxry](https://github.com/vaxerski) - Hyprland
-- [Hyprland](https://github.com/hyprwm/Hyprland) - The window manager
+- [Hyprland](https://github.com/hyprwm/Hyprland) - The wayland compositor
 
 <h6 align='center'>Copyright (C) 2024 HyprUtils<h6>

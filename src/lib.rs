@@ -112,6 +112,22 @@ impl HyprlandConfig {
         }
     }
 
+    fn detect_indentation(&self, content: &[String]) -> usize {
+        for line in content {
+            if let Some(indent) = line
+                .chars()
+                .take_while(|c| c.is_whitespace())
+                .count()
+                .checked_sub(0)
+            {
+                if indent > 0 {
+                    return indent;
+                }
+            }
+        }
+        4
+    }
+
     pub fn add_entry(&mut self, category: &str, entry: &str) {
         let parts: Vec<&str> = category.split('.').collect();
         let parent_category = if parts.len() > 1 {
@@ -126,6 +142,12 @@ impl HyprlandConfig {
             let depth = parent_category.matches('.').count();
             let key = entry.split('=').next().unwrap().trim();
 
+            let indent_size = if let Some(content) = self.sourced_content.get(source_index) {
+                self.detect_indentation(content)
+            } else {
+                4
+            };
+
             let mut should_update_sections = false;
             let mut content_updated = String::new();
 
@@ -134,8 +156,9 @@ impl HyprlandConfig {
 
                 if parts.len() > 1 && !self.sourced_sections.contains_key(&subcategory_key) {
                     let last_part = parts.last().unwrap();
-                    let section_start = format!("{}{} {{", "    ".repeat(depth + 1), last_part);
-                    let section_end = format!("{}}}", "    ".repeat(depth + 1));
+                    let section_start =
+                        format!("{}{} {{", " ".repeat(indent_size * (depth + 1)), last_part);
+                    let section_end = format!("{}}}", " ".repeat(indent_size * (depth + 1)));
 
                     if end > 0 && !sourced_content[end - 1].trim().is_empty() {
                         sourced_content.insert(end, String::new());
@@ -143,8 +166,10 @@ impl HyprlandConfig {
                     }
 
                     sourced_content.insert(end, section_start);
-                    sourced_content
-                        .insert(end + 1, format!("{}{}", "    ".repeat(depth + 2), entry));
+                    sourced_content.insert(
+                        end + 1,
+                        format!("{}{}", " ".repeat(indent_size * (depth + 2)), entry),
+                    );
                     sourced_content.insert(end + 2, section_end);
 
                     self.sourced_sections
@@ -159,8 +184,9 @@ impl HyprlandConfig {
                         category.to_string()
                     };
                     let depth = parent_category.matches('.').count();
+                    let formatted_entry =
+                        format!("{}{}", " ".repeat(indent_size * (depth + 1)), entry);
 
-                    let formatted_entry = format!("{}{}", "    ".repeat(depth + 1), entry);
                     let existing_line = sourced_content[sub_start..=sub_end]
                         .iter()
                         .position(|line| line.trim().starts_with(key));
@@ -175,7 +201,8 @@ impl HyprlandConfig {
                         }
                     }
                 } else {
-                    let formatted_entry = format!("{}{}", "    ".repeat(depth + 1), entry);
+                    let formatted_entry =
+                        format!("{}{}", " ".repeat(indent_size * (depth + 1)), entry);
                     let existing_line = sourced_content[start..=end]
                         .iter()
                         .position(|line| line.trim().starts_with(key));

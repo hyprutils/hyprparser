@@ -160,7 +160,10 @@ impl HyprlandConfig {
                         format!("{}{} {{", " ".repeat(indent_size * (depth + 1)), last_part);
                     let section_end = format!("{}}}", " ".repeat(indent_size * (depth + 1)));
 
-                    if end > 0 && !sourced_content[end - 1].trim().is_empty() {
+                    if end > 0
+                        && end <= sourced_content.len()
+                        && !sourced_content[end - 1].trim().is_empty()
+                    {
                         sourced_content.insert(end, String::new());
                         end += 1;
                     }

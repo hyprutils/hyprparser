@@ -4,7 +4,7 @@ version = "0.1.4"
 authors = ["Nyx <nnyyxxxx@protonmail.com>", "Adam Perkowski <adas1per@protonmail.com>"]
 license = "GPL-2.0"
 description = "A parser for Hyprland's configuration file."
-repository = "https://github.com/nnyyxxxx/hyprparser.git"
+repository = "https://github.com/hyprutils/hyprparser.git"
 readme = "README.md"
 keywords = [
     "parser",

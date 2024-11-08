@@ -62,8 +62,8 @@ fn main() {
 - [ ] Color formatting tests
 
 ## Credits
-- [Nyx](https://github.com/nnyyxxxx) - The parser (everything), [HyprGUI](https://github.com/nnyyxxxx/hyprgui)
-- [Adam](https://github.com/adamperkowski) - Code optimization, unit tests, documentation updates, [HyprGUI](https://github.com/nnyyxxxx/hyprgui)
+- [Nyx](https://github.com/nnyyxxxx) - The parser (everything), [HyprGUI](https://github.com/hyprutils/hyprgui)
+- [Adam](https://github.com/adamperkowski) - Code optimization, unit tests, documentation updates, [HyprGUI](https://github.com/hyprutils/hyprgui)
 - [Vaxry](https://github.com/vaxerski) - Hyprland
 - [Hyprland](https://github.com/hyprwm/Hyprland) - The wayland compositor
 

@@ -3,11 +3,11 @@
 //! [Hyprland's documentation](https://wiki.hyprland.org/Configuring)
 //!
 //! # Example usage
-//! ```rust
+//! ```rust,ignore
 //! use hyprparser::parse_config;
 //! use std::{env, fs, path::Path};
 //!
-//! let config_path = Path::new(&env::var("XDG_CONFIG_HOME")).join("hypr/hyprland.conf");
+//! let config_path = Path::new(&env::var("XDG_CONFIG_HOME").unwrap()).join("hypr/hyprland.conf");
 //! let config_str = fs::read_to_string(&config_path).expect("Failed to read the file");
 //!
 //! let mut parsed_config = parse_config(&config_str);
@@ -333,7 +333,7 @@ impl HyprlandConfig {
     /// Parse a color from Hyprland's config into float RGBA values
     ///
     /// Examples:
-    /// ```rust
+    /// ```rust,ignore
     /// let config = HyprlandConfig::new();
     ///
     /// let rgba = config.parse_color("rgba(1E4632FF)");

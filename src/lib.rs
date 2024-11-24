@@ -1,6 +1,38 @@
+#![doc(
+    html_favicon_url = "https://raw.githubusercontent.com/hyprutils/hyprparser/refs/heads/main/hyprparser.png"
+)]
+#![doc(
+    html_logo_url = "https://raw.githubusercontent.com/hyprutils/hyprparser/refs/heads/main/hyprparser.png"
+)]
+
+//! A parser for [Hyprland](https://hyprland.org)'s configuration files 🚀
+//!
+//! [Hyprland's documentation](https://wiki.hyprland.org/Configuring)
+//!
+//! # Example usage
+//! ```rust,ignore
+//! use hyprparser::parse_config;
+//! use std::{env, fs, path::Path};
+//!
+//! let config_path = Path::new(&env::var("XDG_CONFIG_HOME").unwrap()).join("hypr/hyprland.conf");
+//! let config_str = fs::read_to_string(&config_path).expect("Failed to read the file");
+//!
+//! let mut parsed_config = parse_config(&config_str);
+//!
+//! parsed_config.add_entry("decoration", "rounding = 10");
+//! parsed_config.add_entry("decoration.blur", "enabled = true");
+//! parsed_config.add_entry("decoration.blur", "size = 10");
+//! parsed_config.add_entry_headless("$terminal", "kitty");
+//!
+//! let updated_config_str = parsed_config.to_string();
+//!
+//! fs::write(&config_path, updated_config_str).expect("Failed to write the file");
+//! ```
+
 use std::collections::HashMap;
 use std::{env, fmt, fs};
 
+/// Core structure of the config
 #[derive(Debug, Default)]
 pub struct HyprlandConfig {
     pub content: Vec<String>,
@@ -15,6 +47,7 @@ impl HyprlandConfig {
         Self::default()
     }
 
+    /// Parse one configuration file
     pub fn parse(&mut self, config_str: &str, sourced: bool) {
         let mut section_stack = Vec::new();
         let mut sourced_content: Vec<String> = Vec::new();
@@ -112,6 +145,7 @@ impl HyprlandConfig {
         }
     }
 
+    /// Add an entry to a mutable `HyprlandConfig`
     pub fn add_entry(&mut self, category: &str, entry: &str) {
         let parts: Vec<&str> = category.split('.').collect();
         let parent_category = if parts.len() > 1 {
@@ -251,6 +285,12 @@ impl HyprlandConfig {
         }
     }
 
+    /// Add a headless entry to a mutable `HyprlandConfig`
+    ///
+    /// Example of a headless entry in Hyprland's configuration:
+    /// ```conf
+    /// windowrulev2 = float,class:^(hyprutils.hyprwall)$
+    /// ```
     pub fn add_entry_headless(&mut self, key: &str, value: &str) {
         if key.is_empty() && value.is_empty() {
             self.content.push(String::new());
@@ -262,6 +302,7 @@ impl HyprlandConfig {
         }
     }
 
+    /// Add a [sourced config file](https://wiki.hyprland.org/Configuring/Keywords/#sourcing-multi-file)
     pub fn add_sourced(&mut self, config: Vec<String>) {
         self.sourced_content.push(config);
         self.sourced_paths.push(String::new());
@@ -296,6 +337,22 @@ impl HyprlandConfig {
         }
     }
 
+    /// Parse a color from Hyprland's config into float RGBA values
+    ///
+    /// Examples:
+    /// ```rust,ignore
+    /// let config = HyprlandConfig::new();
+    ///
+    /// let rgba = config.parse_color("rgba(1E4632FF)");
+    /// let rgb = config.parse_color("rgb(1E4632)");
+    /// let argb = config.parse_color("0xFF1E4632");
+    ///
+    /// let expected = Some((0.11764706, 0.27450982, 0.19607843, 1.0));
+    ///
+    /// assert_eq!(expected, rgba);
+    /// assert_eq!(expected, rgb);
+    /// assert_eq!(expected, argb);
+    /// ```
     pub fn parse_color(&self, color_str: &str) -> Option<(f32, f32, f32, f32)> {
         if color_str.starts_with("rgba(") {
             let rgba = color_str.trim_start_matches("rgba(").trim_end_matches(')');
@@ -328,6 +385,7 @@ impl HyprlandConfig {
         }
     }
 
+    /// Format a float RGBA color into Hyprland's RGBA
     pub fn format_color(&self, red: f32, green: f32, blue: f32, alpha: f32) -> String {
         format!(
             "rgba({:02x}{:02x}{:02x}{:02x})",
@@ -377,6 +435,7 @@ impl HyprlandConfig {
     }
 }
 
+/// Automatically parse the whole configuration from str
 pub fn parse_config(config_str: &str) -> HyprlandConfig {
     let mut config = HyprlandConfig::new();
     config.parse(config_str, false);

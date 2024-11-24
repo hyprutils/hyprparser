@@ -49,9 +49,13 @@ jobs:
         run: cargo fmt --all --check
 
       - name: Prepare unit tests
-        run: echo "source = $(pwd)/tests/test_config_2.conf" > tests/test_config_1.conf
+        run: |
+          echo "source = $(pwd)/tests/test_config_2.conf" > tests/test_config_1.conf
+          mkdir -p ~/.config/hypr
+          touch ~/.config/hypr/hyprland.conf
 
       - name: Run cargo test
         run: |
           cargo test
           cargo test --release
+          cargo test --doc

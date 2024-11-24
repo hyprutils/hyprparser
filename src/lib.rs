@@ -10,7 +10,7 @@
 //! [Hyprland's documentation](https://wiki.hyprland.org/Configuring)
 //!
 //! # Example usage
-//! ```rust,ignore
+//! ```rust
 //! use hyprparser::parse_config;
 //! use std::{env, fs, path::Path};
 //!
@@ -340,7 +340,9 @@ impl HyprlandConfig {
     /// Parse a color from Hyprland's config into float RGBA values
     ///
     /// Examples:
-    /// ```rust,ignore
+    /// ```rust
+    /// use hyprparser::HyprlandConfig;
+    ///
     /// let config = HyprlandConfig::new();
     ///
     /// let rgba = config.parse_color("rgba(1E4632FF)");

@@ -6,7 +6,9 @@ A parser for Hyprland's configuration files written in Rust 🚀🦀
 
 <img src='hyprparser.png' width='200' height='200'><br>
 
-[![Crates.io Version](https://img.shields.io/crates/v/hyprparser)](https://crates.io/crates/hyprparser)
+[![Crates.io Version](https://img.shields.io/crates/v/hyprparser)](https://crates.io/crates/hyprparser)<br>
+[![Grind Compliant](https://img.shields.io/badge/Grind-Compliant-blue)](https://github.com/The-Grindhouse/guidelines)<br>
+An unofficial GUI for configuring Hyprland, built with GTK4 and Rust. 🚀🦀<br>
 
 [Hyprland Configuration Documentation](https://wiki.hyprland.org/Configuring/Configuring-Hyprland)
 
